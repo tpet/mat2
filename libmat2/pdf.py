@@ -40,7 +40,8 @@ class PDFParser(abstract.AbstractParser):
 
     def remove_all(self) -> bool:
         if self.lightweight_cleaning is True:
-            return self.__remove_all_lightweight()
+            # return self.__remove_all_lightweight()
+            return self.__remove_superficial_meta(self.filename, self.output_filename)
         return self.__remove_all_thorough()
 
     def __remove_all_lightweight(self) -> bool:
@@ -121,6 +122,10 @@ class PDFParser(abstract.AbstractParser):
         document.set_producer('')
         document.set_creator('')
         document.set_creation_date(-1)
+        # Remove annotation authors (labels).
+        for i in range(document.get_n_pages()):
+            for annot in document.get_page(i).get_annot_mapping():
+                annot.annot.set_label('')
         document.save('file://' + os.path.abspath(out_file))
         return True
 
@@ -144,4 +149,10 @@ class PDFParser(abstract.AbstractParser):
             parsed_meta = self.__parse_metadata_field(metadata['metadata'])
             for key, value in parsed_meta.items():
                 metadata[key] = value
+        # List annotation authors (labels).
+        annot_authors = []
+        for i in range(document.get_n_pages()):
+            for annot in document.get_page(i).get_annot_mapping():
+                annot_authors.append(annot.annot.get_label())
+        metadata['(annotation authors / labels)'] = annot_authors
         return metadata
